@@ -22,9 +22,13 @@ if (APPLE AND CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"
 endif()
 
 include(FetchContent)
+# JUCE 7.0.12 builds on Xcode 15.0, which is what the studio Mac runs.
+# It cannot build against the macOS 15 SDK: it calls CGWindowListCreateImage,
+# which Apple removed there. Override with -DJUCE_TAG=8.0.4 once Xcode is newer.
+set(JUCE_TAG "7.0.12" CACHE STRING "JUCE git tag to build against")
 FetchContent_Declare(JUCE
     GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
-    GIT_TAG 7.0.12
+    GIT_TAG ${JUCE_TAG}
     GIT_SHALLOW TRUE)
 FetchContent_MakeAvailable(JUCE)
 
