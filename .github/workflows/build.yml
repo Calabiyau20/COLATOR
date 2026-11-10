@@ -26,10 +26,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # bash on both platforms: PowerShell mangles the dotted version into "7"
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DJUCE_TAG=${{ matrix.juce }}
+        shell: bash
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DJUCE_TAG="${{ matrix.juce }}"
 
       - name: Build
+        shell: bash
         run: cmake --build build --config Release --parallel 4
 
       - name: Collect (Windows)
