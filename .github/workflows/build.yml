@@ -14,14 +14,20 @@ jobs:
         include:
           - os: windows-latest
             label: Windows
-          - os: macos-13
+            juce: "7.0.12"
+          # Only the current macOS image still gets runners; macos-13 and
+          # macos-14 are retired and queue forever. That image ships the
+          # macOS 15 SDK, which JUCE 7 cannot build against, so the macOS
+          # artifact is built with JUCE 8.
+          - os: macos-latest
             label: macOS
+            juce: "8.0.4"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DJUCE_TAG=${{ matrix.juce }}
 
       - name: Build
         run: cmake --build build --config Release --parallel 4
