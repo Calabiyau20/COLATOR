@@ -1,0 +1,90 @@
+name: Build Percoolator
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: Windows
+          - os: macos-14
+            label: macOS
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel 4
+
+      - name: Collect (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          mkdir -p "out/Percoolator-Windows"
+          cp -R build/Percoolator_artefacts/Release/VST3/*.vst3 "out/Percoolator-Windows/"
+          cp -R build/Percoolator_artefacts/Release/Standalone/*.exe "out/Percoolator-Windows/" || true
+          cat > "out/Percoolator-Windows/INSTALL.txt" <<'TXT'
+          PERCOOLATOR - manual install, Windows
+          Calabi Yau
+
+          1. VST3
+             Copy the folder  Percoolator.vst3
+             into             C:\Program Files\Common Files\VST3\
+             (You need administrator rights for that folder. Keep the whole
+             .vst3 folder intact - it is a bundle, not a single file.)
+
+          2. Standalone
+             Percoolator.exe runs on its own, no DAW needed. Put it anywhere.
+
+          Then rescan plugins in your DAW. Percoolator is an instrument, not an
+          effect: load it on a MIDI track.
+          TXT
+          ls -R out
+
+      - name: Collect (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          mkdir -p "out/Percoolator-macOS"
+          cp -R build/Percoolator_artefacts/Release/VST3/*.vst3 "out/Percoolator-macOS/"
+          cp -R build/Percoolator_artefacts/Release/AU/*.component "out/Percoolator-macOS/"
+          cp -R build/Percoolator_artefacts/Release/Standalone/*.app "out/Percoolator-macOS/" || true
+          cat > "out/Percoolator-macOS/INSTALL.txt" <<'TXT'
+          PERCOOLATOR - manual install, macOS
+          Calabi Yau
+
+          The binaries are universal (Apple Silicon + Intel) and unsigned.
+
+          1. VST3        -> ~/Library/Audio/Plug-Ins/VST3/
+          2. Audio Unit  -> ~/Library/Audio/Plug-Ins/Components/
+          3. Standalone  -> anywhere; Percoolator.app needs no DAW.
+
+          To reach ~/Library in Finder press Cmd+Shift+G and type
+          ~/Library/Audio/Plug-Ins
+
+          Not notarized: if your DAW skips the plugins, run this once in Terminal
+
+            xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Percoolator.vst3
+            xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/Components/Percoolator.component
+
+          Then rescan plugins. Percoolator is an instrument, not an effect:
+          load it on a MIDI track. Bitwig does not host Audio Units - use the VST3.
+          TXT
+          file "out/Percoolator-macOS/Percoolator.vst3/Contents/MacOS/Percoolator"
+          ls -R out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Percoolator-${{ matrix.label }}
+          path: out/
+          if-no-files-found: error
